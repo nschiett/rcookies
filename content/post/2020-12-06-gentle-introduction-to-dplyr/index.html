@@ -1,0 +1,96 @@
+---
+title: Gentle introduction to dplyr
+author: Nina Schiettekatte
+date: '2020-12-06'
+slug: gentle-introduction-to-dplyr
+categories: []
+tags: []
+---
+
+<link href="index_files/anchor-sections/anchor-sections.css" rel="stylesheet" />
+<script src="index_files/anchor-sections/anchor-sections.js"></script>
+
+
+<p>This is a tiny introduction on <code>dplyr</code>, an R package that is part of the tidyverse. I introduce the why and how of wrangling data in a tidy manner.</p>
+<div id="why" class="section level2">
+<h2>Why?</h2>
+<p><code>dplyr</code> can have many utilities in the life of an R coder-today I cannot imagine coding without it. But as we keep things simple, here are the main reasons why I love using dplyr:<br />
+<br>
+- It can help you to transform your raw (and sometimes ugly) data to a beautiful tidy dataframe.<br />
+- You can add new columns.<br />
+- You can group and summarize your data.<br />
+- You can join two dataframes.<br />
+<br>
+Now I can almost hear you thinking, but can’t I do all this in excel?<br />
+The short answer is: yes, but <strong>NO</strong>, don’t do it!<br />
+<br>
+If you are an avid excel user, you can do a lot of data wrangling in excel. However, the big problem with this is that your workflow is <strong>not</strong> reproducible. If you can code everything from the raw data to a pretty figure you want to publish, you are transparant and reliable. Trust me, if you want to be a researcher, being reproducible is a must. Thus, it’s time to forget about excel, and solely use it to enter data.</p>
+</div>
+<div id="how" class="section level2">
+<h2>How?</h2>
+<p>Now let’s have a look at how we can use this tool called <code>dplyr</code> to wrangle data in a reproducible way. For this example, we use <a href="https://github.com/rfordatascience/tidytuesday">Tidytuesday data</a> on vulcanic eruptions. Go ahead, open Rstudio, and try for yourself.<br />
+<br></p>
+<p>First things first, install the R packages. We will obviously need <code>dplyr</code>. We also need <code>readr</code> to import the data on volcanos that is available online. Finally, we need <code>magrittr</code> to use</p>
+<pre class="r"><code>install.packages(&quot;readr&quot;)
+install.packages(&quot;dplyr&quot;)
+install.packages(&quot;magrittr&quot;)</code></pre>
+<p>Once they are installed, we can load the libraries as followed:</p>
+<pre class="r"><code>library(readr)
+library(dplyr)
+library(magrittr)</code></pre>
+<p>Now let’s start with importing the data.</p>
+<pre class="r"><code>#load data
+# 1) A dataframe on volcanos
+df_volcano &lt;- readr::read_csv(&#39;https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/volcano.csv&#39;)
+# 2) A dataframe on eruptions
+df_eruptions &lt;- readr::read_csv(&#39;https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/eruptions.csv&#39;)</code></pre>
+<p>You can see that both dataframes have a lot of information. Let’s say, we only want to keep certain columns. We can select the columns we are interested in using the function <code>select()</code> as followed:</p>
+<pre class="r"><code>df_volcano &lt;- df_volcano %&gt;%
+  select(volcano_number, volcano_name, country, population_within_10_km, population_within_100_km)</code></pre>
+<p>We have now modified the dataframe <code>df_volcano</code> and kept the name and number of the volcano, the country, and the number of people within 10km and 100km around the volcano.
+Let’sq breefly decompose what I did here. Left of the <code>&lt;-</code>, we specify the new name of the dataframe (in this case we want it tpo have the same name: df_volcano). Left of the <code>&lt;-</code> we first write the name of the dataframe we want to modify. By adding the weird sign <code>%&gt;%</code> (called a <strong>pipe</strong>), we specify that we want to perform an action on the data left of it. Finally, we can add the function that performs the action we need, i.e. selecting columns. In between the brackets we simply specify the names of the columns we want to keep.<br />
+<br>
+Now for df_eruptions, select the columns volcano_number, volcano_name, eruption_number, eruption_category, start_year.</p>
+<pre class="r"><code>df_eruptions &lt;- df_eruptions %&gt;%
+  select(volcano_number, volcano_name, eruption_number, eruption_category, start_year)</code></pre>
+<p>We now know how to select columns, now let’s learn how to add columns with the function <code>mutate()</code>.
+We wish to know how many people live between 10 and 100km from the volcano. We will need to substract the population within 100km with the population within 10 km.</p>
+<pre class="r"><code>df_volcano &lt;- df_volcano %&gt;%
+  mutate(population_between_10km_and_100km = population_within_100_km - population_within_10_km) 
+head(df_volcano)</code></pre>
+<pre><code>## # A tibble: 6 x 6
+##   volcano_number volcano_name country population_with… population_with…
+##            &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;              &lt;dbl&gt;            &lt;dbl&gt;
+## 1         283001 Abu          Japan               9594          4071152
+## 2         355096 Acamarachi   Chile                  7             9092
+## 3         342080 Acatenango   Guatem…            60730          7634778
+## 4         213004 Acigol-Nevs… Turkey            127863          2253483
+## 5         321040 Adams        United…               70           393303
+## 6         283170 Adatarayama  Japan               3936          5024654
+## # … with 1 more variable: population_between_10km_and_100km &lt;dbl&gt;</code></pre>
+<p>We have succesfully added a new column!</p>
+<p>If we want to know the average population within 100km per country we can use two functions in combination: <code>group_by()</code> and <code>summarise()</code>.</p>
+<pre class="r"><code>volcano_summary &lt;- df_volcano %&gt;%
+  group_by(country) %&gt;%
+  summarise(mean_population_within_100km = mean(population_within_100_km))
+head(volcano_summary)</code></pre>
+<pre><code>## # A tibble: 6 x 2
+##   country            mean_population_within_100km
+##   &lt;chr&gt;                                     &lt;dbl&gt;
+## 1 Algeria                                   5278 
+## 2 Antarctica                                   0 
+## 3 Argentina                                87716.
+## 4 Armenia                                2554560 
+## 5 Armenia-Azerbaijan                     1713373 
+## 6 Australia                               305180.</code></pre>
+<p>Note that I created a new dataframe for this, called volcano_summary. With the <code>group_by()</code> function we can simply specify the group we want to use before summarising. In our case, we want <code>country</code> to be the grouping variable. Then, within the brackets of <code>summarize()</code>, what information we want to keep for each country, which is the mean of <code>population_within_100_km</code>.<br />
+Next, we want to calculate the total number of eruptions per country. Here, we stumble across a small problem. The country information can be found inside <code>df_volcano</code>, but the eruptions are inside <code>df_eruptions</code>. You may have noticed that both dataframes have two columns in common: <code>volcano_number</code> and <code>volcano_name</code>, which can be use to join the two dataframes. With the function <code>left_join()</code> we can add the volcano data to the eruptions dataframe. The function automatically recognises the common column names and uses those to combine the two dataframes.</p>
+<pre class="r"><code>df_combined &lt;- left_join(df_eruptions, df_volcano)</code></pre>
+<pre><code>## Joining, by = c(&quot;volcano_number&quot;, &quot;volcano_name&quot;)</code></pre>
+<p>Once the data is combined, we can calculate the amount of eruptions per country. The function <code>n()</code> counts the rows per grouping variable.</p>
+<pre class="r"><code>df_summary &lt;- df_combined %&gt;%
+  group_by(country) %&gt;%
+  summarise(n_eruptions = n())</code></pre>
+<pre><code>## `summarise()` ungrouping output (override with `.groups` argument)</code></pre>
+<p>I hope you got a state for using dplyr for wrangling dataframes. Of course this is only a tip of the iceberg. To learn more have a look at this online <a href="https://r4ds.had.co.nz/tidy-data.html">book</a>.</p>
+</div>

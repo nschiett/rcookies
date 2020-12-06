@@ -1,0 +1,102 @@
+---
+title: Gentle introduction to dplyr
+author: Nina Schiettekatte
+date: '2020-12-06'
+slug: gentle-introduction-to-dplyr
+categories: []
+tags: []
+---
+
+
+This is a tiny introduction on `dplyr`, an R package that is part of the tidyverse. I introduce the why and how of wrangling data in a tidy manner. 
+
+## Why? 
+`dplyr` can have many utilities in the life of an R coder-today I cannot imagine coding without it. But as we keep things simple, here are the main reasons why I love using dplyr:     
+<br>
+- It can help you to transform your raw (and sometimes ugly) data to a beautiful tidy dataframe.    
+- You can add new columns.     
+- You can group and summarize your data.    
+- You can join two dataframes.     
+<br>
+Now I can almost hear you thinking, but can't I do all this in excel?     
+The short answer is: yes, but **NO**, don't do it!    
+<br>
+If you are an avid excel user, you can do a lot of data wrangling in excel. However, the big problem with this is that your workflow is **not** reproducible. If you can code everything from the raw data to a pretty figure you want to publish, you are transparant and reliable. Trust me, if you want to be a researcher, being reproducible is a must. Thus, it's time to forget about excel, and solely use it to enter data.      
+
+## How? 
+Now let's have a look at how we can use this tool called `dplyr` to wrangle data in a reproducible way. For this example, we use [Tidytuesday data](https://github.com/rfordatascience/tidytuesday) on vulcanic eruptions. Go ahead, open Rstudio, and try for yourself.   
+<br>     
+
+First things first, install the R packages. We will obviously need `dplyr`. We also need `readr` to import the data on volcanos that is available online. Finally, we need `magrittr` to use 
+```{r, eval = FALSE}
+install.packages("readr")
+install.packages("dplyr")
+install.packages("magrittr")
+```
+Once they are installed, we can load the libraries as followed: 
+```{r, message=FALSE}
+library(readr)
+library(dplyr)
+library(magrittr)
+```
+Now let's start with importing the data. 
+
+```{r, message = FALSE}
+#load data
+# 1) A dataframe on volcanos
+df_volcano <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/volcano.csv')
+# 2) A dataframe on eruptions
+df_eruptions <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/eruptions.csv')
+```
+
+You can see that both dataframes have a lot of information. Let's say, we only want to keep certain columns. We can select the columns we are interested in using the function `select()` as followed:
+```{r}
+df_volcano <- df_volcano %>%
+  select(volcano_number, volcano_name, country, population_within_10_km, population_within_100_km)
+```
+We have now modified the dataframe `df_volcano` and kept the name and number of the volcano, the country, and the number of people within 10km and 100km around the volcano. 
+Let'sq breefly decompose what I did here. Left of the `<-`, we specify the new name of the dataframe (in this case we want it tpo have the same name: df_volcano). Left of the `<-` we first write the name of the dataframe we want to modify. By adding the weird sign `%>%` (called a **pipe**), we specify that we want to perform an action on the data left of it. Finally, we can add the function that performs the action we need, i.e. selecting columns. In between the brackets we simply specify the names of the columns we want to keep.      
+<br>
+Now for df_eruptions, select the columns volcano_number, volcano_name, eruption_number, eruption_category, start_year.     
+```{r}
+df_eruptions <- df_eruptions %>%
+  select(volcano_number, volcano_name, eruption_number, eruption_category, start_year)
+```
+We now know how to select columns, now let's learn how to add columns with the function `mutate()`.
+We wish to know how many people live between 10 and 100km from the volcano. We will need to substract the population within 100km with the population within 10 km.   
+```{r}
+df_volcano <- df_volcano %>%
+  mutate(population_between_10km_and_100km = population_within_100_km - population_within_10_km) 
+head(df_volcano)
+```
+We have succesfully added a new column!    
+
+If we want to know the average population within 100km per country we can use two functions in combination: `group_by()` and `summarise()`. 
+
+```{r, message = FALSE}
+volcano_summary <- df_volcano %>%
+  group_by(country) %>%
+  summarise(mean_population_within_100km = mean(population_within_100_km))
+head(volcano_summary)
+```
+Note that I created a new dataframe for this, called volcano_summary. With the `group_by()` function we can simply specify the group we want to use before summarising. In our case, we want `country` to be the grouping variable. Then, within the brackets of `summarize()`, what information we want to keep for each country, which is the mean of `population_within_100_km`.     
+Next, we want to calculate the total number of eruptions per country. Here, we stumble across a small problem. The country information can be found inside `df_volcano`, but the eruptions are inside `df_eruptions`. You may have noticed that both dataframes have two columns in common: `volcano_number` and `volcano_name`, which can be use to join the two dataframes. With the function `left_join()` we can add the volcano data to the eruptions dataframe. The function automatically recognises the common column names and uses those to combine the two dataframes. 
+
+```{r}
+df_combined <- left_join(df_eruptions, df_volcano)
+```
+Once the data is combined, we can calculate the amount of eruptions per country. The function `n()` counts the rows per grouping variable. 
+```{r}
+df_summary <- df_combined %>%
+  group_by(country) %>%
+  summarise(n_eruptions = n())
+```
+
+
+I hope you got a state for using dplyr for wrangling dataframes. Of course this is only a tip of the iceberg. To learn more have a look at this online [book](https://r4ds.had.co.nz/tidy-data.html). 
+
+
+
+
+
+
