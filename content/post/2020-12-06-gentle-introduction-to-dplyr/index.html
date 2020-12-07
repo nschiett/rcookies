@@ -21,7 +21,7 @@ tags: []
 - You can group and summarize your data.<br />
 - You can join two dataframes.<br />
 <br>
-Now I can almost hear you thinking, but can’t I do all this in excel?<br />
+Now I can almost hear you think, but can’t I do all this in excel?<br />
 The short answer is: yes, but <strong>NO</strong>, don’t do it!<br />
 <br>
 If you are an avid excel user, you can do a lot of data wrangling in excel. However, the big problem with this is that your workflow is <strong>not</strong> reproducible. If you can code everything from the raw data to a pretty figure you want to publish, you are transparant and reliable. Trust me, if you want to be a researcher, being reproducible is a must. Thus, it’s time to forget about excel, and solely use it to enter data.</p>
@@ -30,7 +30,7 @@ If you are an avid excel user, you can do a lot of data wrangling in excel. Howe
 <h2>How?</h2>
 <p>Now let’s have a look at how we can use this tool called <code>dplyr</code> to wrangle data in a reproducible way. For this example, we use <a href="https://github.com/rfordatascience/tidytuesday">Tidytuesday data</a> on vulcanic eruptions. Go ahead, open Rstudio, and try for yourself.<br />
 <br></p>
-<p>First things first, install the R packages. We will obviously need <code>dplyr</code>. We also need <code>readr</code> to import the data on volcanos that is available online. Finally, we need <code>magrittr</code> to use</p>
+<p>First things first, install the R packages. We will obviously need <code>dplyr</code>. We also need <code>readr</code> to import the data on volcanos that is available online. Finally, we need <code>magrittr</code> to use pipes.</p>
 <pre class="r"><code>install.packages(&quot;readr&quot;)
 install.packages(&quot;dplyr&quot;)
 install.packages(&quot;magrittr&quot;)</code></pre>
@@ -48,12 +48,12 @@ df_eruptions &lt;- readr::read_csv(&#39;https://raw.githubusercontent.com/rforda
 <pre class="r"><code>df_volcano &lt;- df_volcano %&gt;%
   select(volcano_number, volcano_name, country, population_within_10_km, population_within_100_km)</code></pre>
 <p>We have now modified the dataframe <code>df_volcano</code> and kept the name and number of the volcano, the country, and the number of people within 10km and 100km around the volcano.
-Let’sq breefly decompose what I did here. Left of the <code>&lt;-</code>, we specify the new name of the dataframe (in this case we want it tpo have the same name: df_volcano). Left of the <code>&lt;-</code> we first write the name of the dataframe we want to modify. By adding the weird sign <code>%&gt;%</code> (called a <strong>pipe</strong>), we specify that we want to perform an action on the data left of it. Finally, we can add the function that performs the action we need, i.e. selecting columns. In between the brackets we simply specify the names of the columns we want to keep.<br />
+Let’s breefly decompose what I did here. Left of the <code>&lt;-</code>, we specify the new name of the dataframe (in this case we want it to have the same name: df_volcano). Left of the <code>&lt;-</code> we first write the name of the dataframe we want to modify. By adding the weird sign <code>%&gt;%</code> (called a <strong>pipe</strong>), we specify that we want to perform an action on the data left of it. Finally, we can add the function that performs the action we need, i.e. selecting columns. In between the brackets we simply specify the names of the columns we want to keep.<br />
 <br>
 Now for df_eruptions, select the columns volcano_number, volcano_name, eruption_number, eruption_category, start_year.</p>
 <pre class="r"><code>df_eruptions &lt;- df_eruptions %&gt;%
   select(volcano_number, volcano_name, eruption_number, eruption_category, start_year)</code></pre>
-<p>We now know how to select columns, now let’s learn how to add columns with the function <code>mutate()</code>.
+<p>We now know how to select columns, let’s learn how to add columns with the function <code>mutate()</code>.
 We wish to know how many people live between 10 and 100km from the volcano. We will need to substract the population within 100km with the population within 10 km.</p>
 <pre class="r"><code>df_volcano &lt;- df_volcano %&gt;%
   mutate(population_between_10km_and_100km = population_within_100_km - population_within_10_km) 
@@ -92,5 +92,5 @@ Next, we want to calculate the total number of eruptions per country. Here, we s
   group_by(country) %&gt;%
   summarise(n_eruptions = n())</code></pre>
 <pre><code>## `summarise()` ungrouping output (override with `.groups` argument)</code></pre>
-<p>I hope you got a state for using dplyr for wrangling dataframes. Of course this is only a tip of the iceberg. To learn more have a look at this online <a href="https://r4ds.had.co.nz/tidy-data.html">book</a>.</p>
+<p>I hope you got a taste for using dplyr to wrangle dataframes. Of course this is only a tip of the iceberg. To learn more have a look at this <a href="https://r4ds.had.co.nz/tidy-data.html">book</a> or the many tutorials available online.</p>
 </div>

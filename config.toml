@@ -20,7 +20,7 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_cache$", "\\.knit\\.md$", "\\.utf8\
     url = "https://twitter.com/NinaSchiett"
 
 [params]
-    description = "A personalwebsite with random R posts."
+    description = "A personal website with random R posts."
 
     # options for highlight.js (version, additional languages, and theme)
     highlightjsVersion = "9.12.0"
@@ -32,11 +32,11 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_cache$", "\\.knit\\.md$", "\\.utf8\
     MathJaxVersion = "2.7.5"
 
     # path to the favicon, under "static"
-    favicon = "favicon.ico"
+    favicon = "logo.png"
 
     [params.logo]
     url = "logo.png"
-    width = 50
+    width = 80
     height = 50
     alt = "Logo"
 
