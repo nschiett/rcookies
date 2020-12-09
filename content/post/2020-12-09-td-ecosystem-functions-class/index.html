@@ -1,0 +1,229 @@
+---
+title: TD ecosystem functions class
+author: Nina Schiettekatte
+date: '2020-12-09'
+slug: td-ecosystem-functions-class
+categories: []
+tags: []
+---
+
+<link href="index_files/anchor-sections/anchor-sections.css" rel="stylesheet" />
+<script src="index_files/anchor-sections/anchor-sections.js"></script>
+
+
+<p>This exercise consists of two parts:<br />
+1) Fitting a Von Bertalanffy growth curve<br />
+2) Quantifying functions for fish assemblages<br />
+<br>
+Let’s start with loading the packages we will need today. If you haven’t already, you may need to install them using the function <code>install.packages()</code></p>
+<pre class="r"><code>library(dplyr)
+library(ggplot2)
+library(fishualize)
+library(magrittr)</code></pre>
+<div id="von-bertalanffy-growth-curve" class="section level2">
+<h2>Von Bertalanffy growth curve</h2>
+<p>This growth model is the most commonly used for fishes and can be fitted to length-age data (with the use of otoliths).<br />
+It uses the following formula:<br />
+<span class="math display">\[
+L = L_{inf} (1 - exp(-k(t-t_0))),
+\]</span>
+where <span class="math inline">\(L\)</span> is the predicted length, <span class="math inline">\(t\)</span> is the age, <span class="math inline">\(L_{inf}\)</span> is the asymptotic average length, <span class="math inline">\(K\)</span> is the growth rate coefficient, <span class="math inline">\(t_0\)</span> is a modeling parameter represents the time or age where the average length is zero.<br />
+<br>
+We can try to fit this model to extract the three parameters. To do this, we will need to use the R function <code>nls()</code> (non-linear least squares regression).<br />
+<be>
+The syntax for creating a nonlinear least square test in R is:<br />
+<code>nls(formula, data, start)</code></p>
+<ul>
+<li><p>formula is a nonlinear model formula including variables and parameters (In our case the Von Bertalanffy model).</p></li>
+<li><p>data is a data frame used to evaluate the variables in the formula.</p></li>
+<li><p>start is a named list or named numeric vector of starting estimates (<strong>TIP</strong>: use <code>list(linf = 20, k = 0.5, t0 = 0)</code>).</p></li>
+</ul>
+<p><br>
+First things first, let’s simulate some data to use. Copy the code block below and simply run it in R to simulate data.</p>
+<pre class="r"><code>data &lt;- data.frame(
+  age = as.numeric(rpois(100, 5)),
+  linf = rnorm(100, 22, 2),
+  k = rnorm(100, 0.7, 0.1)
+) %&gt;%
+  mutate(length = linf * (1 - exp(-k*age))) %&gt;%
+  select(age, length)</code></pre>
+<p>We now created a dataframe with 100 observations of length and age of a fish species. We will use this data to fit our model. First we have a quick look at the data.</p>
+<pre class="r"><code>ggplot(data) +
+  geom_point(aes(x = age, y = length)) +
+  theme_bw()</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>Go ahead and try to fit the model with the <code>nls()</code> function.<br />
+<strong>TIP</strong>: use <code>start = list(linf = 20, k = 0.5, t0 = 0)</code>.</p>
+<pre class="r"><code>fit &lt;- nls(length ~ linf * (1 - exp(-k*(age - t0))), 
+           data = data, 
+           start = list(linf = 20, k = 0.5, t0 = 0))</code></pre>
+<p>What are the estimated values for k, linf and t0?</p>
+<pre class="r"><code>summary(fit)</code></pre>
+<pre><code>## 
+## Formula: length ~ linf * (1 - exp(-k * (age - t0)))
+## 
+## Parameters:
+##      Estimate Std. Error t value Pr(&gt;|t|)    
+## linf  21.5661     0.2956  72.953  &lt; 2e-16 ***
+## k      0.8256     0.1167   7.077 2.31e-10 ***
+## t0     0.2180     0.2048   1.064     0.29    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 1.755 on 97 degrees of freedom
+## 
+## Number of iterations to convergence: 4 
+## Achieved convergence tolerance: 6.758e-07</code></pre>
+<p>Now add a column to our dataframe with the predictions and make a figure. (<strong>TIP</strong> If you use ggplot2, use the geom_smooth() option)</p>
+<pre class="r"><code>data &lt;- data %&gt;%
+  mutate(l_predict = predict(fit))
+
+ggplot(data) +
+  geom_point(aes(x = age, y = length)) +
+  geom_smooth(aes(x = age, y = l_predict), se = FALSE, color = &quot;red&quot;) +
+  theme_bw() +
+  labs(x = &quot;Age (years)&quot;, y = &quot;Length (cm)&quot;)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+</div>
+<div id="estimating-multiple-functions" class="section level2">
+<h2>Estimating multiple functions</h2>
+<p>We will calculate 4 functions for 10 fictive fish assemblages: N excretion, biomass, biomass production, and bioerosion rate. See below all the needed formulas:
+First load the dataframe called “fish_assemblages.csv”.
+It also contains all parameters you need.
+<strong>Bioerosion rate</strong><br />
+<span class="math display">\[BV = 0.000676 e^{0.135L}\]</span><br />
+L = Total length (cm)<br />
+BV = Bite volume (cm^3)<br />
+<span class="math display">\[Bioerosion = BR*BV*FL*CD\]</span>
+BR = bite rate in bites/min<br />
+BV = bite volume in cm3<br />
+FL = length of feeding day in minutes<br />
+CD = carbonate density in g/cm3<br />
+<em>Chlorurus microrhinos</em>:<br />
+FL = 650<br />
+BR = 7.9<br />
+CD = 2.44 g/cm3</p>
+<p><strong>Biomass and biomass production</strong><br />
+<span class="math display">\[L = Linf (1 – exp(-K (t – t0))\]</span>
+<span class="math display">\[Biomass = a * length^b\]</span>
+<strong>N excretion</strong>
+Here we use a simplified method: linear regression with biomass.<br />
+<span class="math display">\[Excretion = intercept + slope * biomass\]</span></p>
+<p>Start with loading the data and exploring what’s inside.</p>
+<pre class="r"><code>data &lt;- read.csv(&quot;fish_assemblages.csv&quot;)
+summary(data)</code></pre>
+<pre><code>##       site                       species        length           lw_a        
+##  s15    : 50   Acanthurus_lineatus   : 85   Min.   : 5.00   Min.   :0.01175  
+##  s19    : 50   Cephalopholis_argus   : 50   1st Qu.: 9.00   1st Qu.:0.01585  
+##  s30    : 50   Chaetodon_ornatissimus: 96   Median :13.00   Median :0.01585  
+##  s32    : 50   Chlorurus_microrhinos : 53   Mean   :17.39   Mean   :0.01730  
+##  s4     : 50   Chromis_xanthura      :216   3rd Qu.:20.00   3rd Qu.:0.01778  
+##  s45    : 50                                Max.   :68.00   Max.   :0.02344  
+##  (Other):200                                                                 
+##       lw_b       N_excretion_slope   N_excretion_intercept      linf     
+##  Min.   :2.950   Min.   :0.0001100   Min.   :0.000000      Min.   :15.0  
+##  1st Qu.:2.950   1st Qu.:0.0001200   1st Qu.:0.001100      1st Qu.:15.0  
+##  Median :2.970   Median :0.0001500   Median :0.008000      Median :20.0  
+##  Mean   :2.982   Mean   :0.0001397   Mean   :0.006295      Mean   :30.2  
+##  3rd Qu.:3.010   3rd Qu.:0.0001500   3rd Qu.:0.008000      3rd Qu.:38.0  
+##  Max.   :3.040   Max.   :0.0001600   Max.   :0.015000      Max.   :70.0  
+##                                                                          
+##        k                t0   
+##  Min.   :0.1300   Min.   :0  
+##  1st Qu.:0.2400   1st Qu.:0  
+##  Median :0.6100   Median :0  
+##  Mean   :0.4591   Mean   :0  
+##  3rd Qu.:0.6100   3rd Qu.:0  
+##  Max.   :0.6500   Max.   :0  
+## </code></pre>
+<p>We have 10 sites and 5 species.<br />
+Now try and calculate all four functions. For biomass production (g/day), you will need to transform the formula a bit to first calculate the age of each fish. Then you can estimate the length of the fish at age + 1/365 (i.e, how much the fish will grow in one day). Using both the biomass of the lenth and the predicted future length, you can calculate the change in biomass per day.<br />
+Once you calculated the process per individual, you can summarize per site.</p>
+<pre class="r"><code>### bioerosion
+data &lt;- data %&gt;%
+  mutate(bioerosion = case_when(
+    species == &quot;Chlorurus_microrhinos&quot; ~
+      0.000676 * exp(1) ^(0.135 * length) * 7.9 * 2.44 * 650,
+  TRUE ~ 0))
+
+### biomass
+data &lt;- data %&gt;%
+  mutate(biomass = lw_a * length^lw_b)
+
+### biomass production 
+data &lt;- data %&gt;%
+  mutate(t = log(1 - length/linf)/-k) %&gt;%
+  mutate(length2 = linf * (1 - exp(-k*(t + (1/365))))) %&gt;%
+  mutate(biomass2 = lw_a * length2^lw_b) %&gt;%
+  mutate(biomass_prod = biomass2 - biomass) 
+
+### excretion
+data &lt;- data %&gt;%
+  mutate(
+    excretion = N_excretion_intercept + biomass * N_excretion_slope)
+
+### Total function per site
+summary &lt;- group_by(data, site) %&gt;%
+  summarise(N_ex = sum(excretion), 
+            biomass_prod = sum(biomass_prod), 
+            biomass = sum(biomass),
+            bioerosion = sum(bioerosion))</code></pre>
+<p>Make a barplot of each function per site.
+(<strong>TIP</strong> If you use ggplot2, use geom_col() )<br />
+Which site has the highest function?</p>
+<pre class="r"><code>ggplot(summary) +
+  geom_col(aes(x = site, y = N_ex), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = &quot;Site&quot;, y = &quot;N excretion (g N/day)&quot;)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<pre class="r"><code>ggplot(summary) +
+  geom_col(aes(x = site, y = biomass), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = &quot;Site&quot;, y = &quot;Biomass (g)&quot;)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-9-2.png" width="672" /></p>
+<pre class="r"><code>ggplot(summary) +
+  geom_col(aes(x = site, y = biomass_prod), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = &quot;Site&quot;, y = &quot;Biomass production (g/day)&quot;)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-9-3.png" width="672" /></p>
+<pre class="r"><code>ggplot(summary) +
+  geom_col(aes(x = site, y = bioerosion), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = &quot;Site&quot;, y = &quot;Bioerosion (g CaCO3/day)&quot;)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-9-4.png" width="672" /></p>
+<p><strong>Bonus</strong>: Summarize per site and species and investigate the contribution of each species to each function. Make a barplot colored per species (Tip: use fill for this). Which species contributes the most to each function?</p>
+<pre class="r"><code>summary &lt;- group_by(data, site, species) %&gt;%
+  summarise(N_ex = sum(excretion), 
+            biomass_prod = sum(biomass_prod), 
+            biomass = sum(biomass),
+            bioerosion = sum(bioerosion))</code></pre>
+<pre><code>## `summarise()` regrouping output by &#39;site&#39; (override with `.groups` argument)</code></pre>
+<pre class="r"><code>ggplot(summary) +
+  geom_col(aes(x = site, y = N_ex, fill = species), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = &quot;Site&quot;, y = &quot;N excretion (g N/day)&quot;)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<pre class="r"><code>ggplot(summary) +
+  geom_col(aes(x = site, y = biomass, fill = species), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = &quot;Site&quot;, y = &quot;Biomass (g)&quot;)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-10-2.png" width="672" /></p>
+<pre class="r"><code>ggplot(summary) +
+  geom_col(aes(x = site, y = biomass_prod, fill = species), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = &quot;Site&quot;, y = &quot;Biomass production (g/day)&quot;)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-10-3.png" width="672" /></p>
+<pre class="r"><code>ggplot(summary) +
+  geom_col(aes(x = site, y = bioerosion, fill = species), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = &quot;Site&quot;, y = &quot;Bioerosion (g CaCO3/day)&quot;)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-10-4.png" width="672" /></p>
+</div>

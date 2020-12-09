@@ -10,6 +10,15 @@ tags: []
 This exercise consists of two parts:    
 1) Fitting a Von Bertalanffy growth curve     
 2) Quantifying functions for fish assemblages    
+<br>
+Let's start with loading the packages we will need today. If you haven't already, you may need to install them using the function `install.packages()`     
+```{r, message = FALSE}
+library(dplyr)
+library(ggplot2)
+library(fishualize)
+library(magrittr)
+```
+
 
 ## Von Bertalanffy growth curve
 
@@ -34,8 +43,7 @@ The syntax for creating a nonlinear least square test in R is:
 <br>
 First things first, let's simulate some data to use. Copy the code block below and simply run it in R to simulate data.     
 
-```{r}
-library(dplyr)
+```{r, message = FALSE}
 data <- data.frame(
   age = as.numeric(rpois(100, 5)),
   linf = rnorm(100, 22, 2),
@@ -47,7 +55,6 @@ data <- data.frame(
 
 We now created a dataframe with 100 observations of length and age of a fish species. We will use this data to fit our model. First we have a quick look at the data. 
 ```{r}
-library(ggplot2)
 ggplot(data) +
   geom_point(aes(x = age, y = length)) +
   theme_bw()
@@ -68,9 +75,9 @@ What are the estimated values for k, linf and t0?
 ```{r}
 summary(fit)
 ```
-Now add a column to our dataframe with the predictions and make a figure. (**TIP** If tou use ggplot2, use the geom_smooth() option)
+Now add a column to our dataframe with the predictions and make a figure. (**TIP** If you use ggplot2, use the geom_smooth() option)
 
-```{r}
+```{r, message = FALSE}
 data <- data %>%
   mutate(l_predict = predict(fit))
 
@@ -81,6 +88,141 @@ ggplot(data) +
   labs(x = "Age (years)", y = "Length (cm)")
 
 ```
+
+
+## Estimating multiple functions  
+
+We will calculate 4 functions for 10 fictive fish assemblages: N excretion, biomass, biomass production, and bioerosion rate. See below all the needed formulas: 
+First load the dataframe called "fish_assemblages.csv".
+It also contains all parameters you need. 
+**Bioerosion rate**     
+$$BV = 0.000676 e^{0.135L}$$     
+L = Total length (cm)          
+BV = Bite volume (cm^3)      
+$$Bioerosion = BR*BV*FL*CD$$
+BR = bite rate in bites/min       
+BV = bite volume in cm3        
+FL = length of feeding day in minutes        
+CD = carbonate density in g/cm3       
+*Chlorurus microrhinos*:        
+FL = 650        
+BR = 7.9        
+CD =  2.44 g/cm3         
+
+**Biomass and biomass production**       
+$$L = Linf (1 – exp(-K (t – t0))$$
+$$Biomass = a * length^b$$
+**N excretion**
+Here we use a simplified method: linear regression with biomass.      
+$$Excretion = intercept + slope * biomass$$      
+          
+Start with loading the data and exploring what's inside.
+```{r}
+data <- read.csv("fish_assemblages.csv")
+summary(data)
+```
+
+We have 10 sites and 5 species.          
+Now try and calculate all four functions. For biomass production (g/day), you will need to transform the formula a bit to first calculate the age of each fish. Then you can estimate the length of the fish at age + 1/365 (i.e, how much the fish will grow in one day). Using both the biomass of the lenth and the predicted future length, you can calculate the change in biomass per day.         
+Once you calculated the process per individual, you can summarize per site.         
+```{r, message = FALSE}
+### bioerosion
+data <- data %>%
+  mutate(bioerosion = case_when(
+    species == "Chlorurus_microrhinos" ~
+      0.000676 * exp(1) ^(0.135 * length) * 7.9 * 2.44 * 650,
+  TRUE ~ 0))
+
+### biomass
+data <- data %>%
+  mutate(biomass = lw_a * length^lw_b)
+
+### biomass production 
+data <- data %>%
+  mutate(t = log(1 - length/linf)/-k) %>%
+  mutate(length2 = linf * (1 - exp(-k*(t + (1/365))))) %>%
+  mutate(biomass2 = lw_a * length2^lw_b) %>%
+  mutate(biomass_prod = biomass2 - biomass) 
+
+### excretion
+data <- data %>%
+  mutate(
+    excretion = N_excretion_intercept + biomass * N_excretion_slope)
+
+### Total function per site
+summary <- group_by(data, site) %>%
+  summarise(N_ex = sum(excretion), 
+            biomass_prod = sum(biomass_prod), 
+            biomass = sum(biomass),
+            bioerosion = sum(bioerosion))
+
+```
+Make a barplot of each function per site.
+(**TIP** If you use ggplot2, use geom_col() )         
+Which site has the highest function? 
+```{r}
+ggplot(summary) +
+  geom_col(aes(x = site, y = N_ex), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = "Site", y = "N excretion (g N/day)")
+
+ggplot(summary) +
+  geom_col(aes(x = site, y = biomass), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = "Site", y = "Biomass (g)")
+
+ggplot(summary) +
+  geom_col(aes(x = site, y = biomass_prod), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = "Site", y = "Biomass production (g/day)")
+
+ggplot(summary) +
+  geom_col(aes(x = site, y = bioerosion), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = "Site", y = "Bioerosion (g CaCO3/day)")
+
+```
+
+
+**Bonus**: Summarize per site and species and investigate the contribution of each species to each function. Make a barplot colored per species (Tip: use fill for this). Which species contributes the most to each function? 
+```{r}
+summary <- group_by(data, site, species) %>%
+  summarise(N_ex = sum(excretion), 
+            biomass_prod = sum(biomass_prod), 
+            biomass = sum(biomass),
+            bioerosion = sum(bioerosion))
+
+ggplot(summary) +
+  geom_col(aes(x = site, y = N_ex, fill = species), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = "Site", y = "N excretion (g N/day)")
+
+ggplot(summary) +
+  geom_col(aes(x = site, y = biomass, fill = species), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = "Site", y = "Biomass (g)")
+
+ggplot(summary) +
+  geom_col(aes(x = site, y = biomass_prod, fill = species), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = "Site", y = "Biomass production (g/day)")
+
+ggplot(summary) +
+  geom_col(aes(x = site, y = bioerosion, fill = species), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = "Site", y = "Bioerosion (g CaCO3/day)")
+
+```
+
+
 
 
 
