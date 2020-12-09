@@ -1,0 +1,87 @@
+---
+title: TD ecosystem functions class
+author: Nina Schiettekatte
+date: '2020-12-09'
+slug: td-ecosystem-functions-class
+categories: []
+tags: []
+---
+
+This exercise consists of two parts:    
+1) Fitting a Von Bertalanffy growth curve     
+2) Quantifying functions for fish assemblages    
+
+## Von Bertalanffy growth curve
+
+This growth model is the most commonly used for fishes and can be fitted to length-age data (with the use of otoliths).  
+It uses the following formula:  
+$$
+L = L_{inf} (1 - exp(-k(t-t_0))),
+$$
+where $L$ is the predicted length, $t$ is the age, $L_{inf}$ is the asymptotic average length, $K$ is the growth rate coefficient, $t_0$ is a modeling parameter represents the time or age where the average length is zero.     
+<br>
+We can try to fit this model to extract the three parameters. To do this, we will need to use the R function `nls()` (non-linear least squares regression).   
+<be>
+The syntax for creating a nonlinear least square test in R is:       
+`nls(formula, data, start)`       
+
+  - formula is a nonlinear model formula including variables and parameters (In our case the Von Bertalanffy model).
+
+  - data is a data frame used to evaluate the variables in the formula.
+
+  - start is a named list or named numeric vector of starting estimates (**TIP**: use `list(linf = 20, k = 0.5, t0 = 0)`).    
+  
+<br>
+First things first, let's simulate some data to use. Copy the code block below and simply run it in R to simulate data.     
+
+```{r}
+library(dplyr)
+data <- data.frame(
+  age = as.numeric(rpois(100, 5)),
+  linf = rnorm(100, 22, 2),
+  k = rnorm(100, 0.7, 0.1)
+) %>%
+  mutate(length = linf * (1 - exp(-k*age))) %>%
+  select(age, length)
+```
+
+We now created a dataframe with 100 observations of length and age of a fish species. We will use this data to fit our model. First we have a quick look at the data. 
+```{r}
+library(ggplot2)
+ggplot(data) +
+  geom_point(aes(x = age, y = length)) +
+  theme_bw()
+```
+
+
+Go ahead and try to fit the model with the `nls()` function.      
+**TIP**: use `start = list(linf = 20, k = 0.5, t0 = 0)`.
+
+
+```{r}
+fit <- nls(length ~ linf * (1 - exp(-k*(age - t0))), 
+           data = data, 
+           start = list(linf = 20, k = 0.5, t0 = 0))
+
+```
+What are the estimated values for k, linf and t0?
+```{r}
+summary(fit)
+```
+Now add a column to our dataframe with the predictions and make a figure. (**TIP** If tou use ggplot2, use the geom_smooth() option)
+
+```{r}
+data <- data %>%
+  mutate(l_predict = predict(fit))
+
+ggplot(data) +
+  geom_point(aes(x = age, y = length)) +
+  geom_smooth(aes(x = age, y = l_predict), se = FALSE, color = "red") +
+  theme_bw() +
+  labs(x = "Age (years)", y = "Length (cm)")
+
+```
+
+
+
+
