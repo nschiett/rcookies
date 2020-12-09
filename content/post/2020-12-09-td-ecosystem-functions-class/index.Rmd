@@ -65,19 +65,19 @@ Go ahead and try to fit the model with the `nls()` function.
 **TIP**: use `start = list(linf = 20, k = 0.5, t0 = 0)`.
 
 
-```{r}
+```{r, include=FALSE}
 fit <- nls(length ~ linf * (1 - exp(-k*(age - t0))), 
            data = data, 
            start = list(linf = 20, k = 0.5, t0 = 0))
 
 ```
 What are the estimated values for k, linf and t0?
-```{r}
+```{r, include=FALSE}
 summary(fit)
 ```
 Now add a column to our dataframe with the predictions and make a figure. (**TIP** If you use ggplot2, use the geom_smooth() option)
 
-```{r, message = FALSE}
+```{r, message = FALSE, include=FALSE}
 data <- data %>%
   mutate(l_predict = predict(fit))
 
@@ -125,7 +125,7 @@ summary(data)
 We have 10 sites and 5 species.          
 Now try and calculate all four functions. For biomass production (g/day), you will need to transform the formula a bit to first calculate the age of each fish. Then you can estimate the length of the fish at age + 1/365 (i.e, how much the fish will grow in one day). Using both the biomass of the lenth and the predicted future length, you can calculate the change in biomass per day.         
 Once you calculated the process per individual, you can summarize per site.         
-```{r, message = FALSE}
+```{r, message = FALSE, include=FALSE}
 ### bioerosion
 data <- data %>%
   mutate(bioerosion = case_when(
@@ -160,7 +160,7 @@ summary <- group_by(data, site) %>%
 Make a barplot of each function per site.
 (**TIP** If you use ggplot2, use geom_col() )         
 Which site has the highest function? 
-```{r}
+```{r, include=FALSE}
 ggplot(summary) +
   geom_col(aes(x = site, y = N_ex), alpha = 0.9) +
   scale_fill_fish_d() +
@@ -189,7 +189,7 @@ ggplot(summary) +
 
 
 **Bonus**: Summarize per site and species and investigate the contribution of each species to each function. Make a barplot colored per species (Tip: use fill for this). Which species contributes the most to each function? 
-```{r}
+```{r, message = FALSE, include = FALSE}
 summary <- group_by(data, site, species) %>%
   summarise(N_ex = sum(excretion), 
             biomass_prod = sum(biomass_prod), 

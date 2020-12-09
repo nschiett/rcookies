@@ -54,36 +54,8 @@ First things first, let’s simulate some data to use. Copy the code block below
 <p><img src="index_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 <p>Go ahead and try to fit the model with the <code>nls()</code> function.<br />
 <strong>TIP</strong>: use <code>start = list(linf = 20, k = 0.5, t0 = 0)</code>.</p>
-<pre class="r"><code>fit &lt;- nls(length ~ linf * (1 - exp(-k*(age - t0))), 
-           data = data, 
-           start = list(linf = 20, k = 0.5, t0 = 0))</code></pre>
 <p>What are the estimated values for k, linf and t0?</p>
-<pre class="r"><code>summary(fit)</code></pre>
-<pre><code>## 
-## Formula: length ~ linf * (1 - exp(-k * (age - t0)))
-## 
-## Parameters:
-##      Estimate Std. Error t value Pr(&gt;|t|)    
-## linf  21.5661     0.2956  72.953  &lt; 2e-16 ***
-## k      0.8256     0.1167   7.077 2.31e-10 ***
-## t0     0.2180     0.2048   1.064     0.29    
-## ---
-## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
-## 
-## Residual standard error: 1.755 on 97 degrees of freedom
-## 
-## Number of iterations to convergence: 4 
-## Achieved convergence tolerance: 6.758e-07</code></pre>
 <p>Now add a column to our dataframe with the predictions and make a figure. (<strong>TIP</strong> If you use ggplot2, use the geom_smooth() option)</p>
-<pre class="r"><code>data &lt;- data %&gt;%
-  mutate(l_predict = predict(fit))
-
-ggplot(data) +
-  geom_point(aes(x = age, y = length)) +
-  geom_smooth(aes(x = age, y = l_predict), se = FALSE, color = &quot;red&quot;) +
-  theme_bw() +
-  labs(x = &quot;Age (years)&quot;, y = &quot;Length (cm)&quot;)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 </div>
 <div id="estimating-multiple-functions" class="section level2">
 <h2>Estimating multiple functions</h2>
@@ -139,91 +111,8 @@ summary(data)</code></pre>
 <p>We have 10 sites and 5 species.<br />
 Now try and calculate all four functions. For biomass production (g/day), you will need to transform the formula a bit to first calculate the age of each fish. Then you can estimate the length of the fish at age + 1/365 (i.e, how much the fish will grow in one day). Using both the biomass of the lenth and the predicted future length, you can calculate the change in biomass per day.<br />
 Once you calculated the process per individual, you can summarize per site.</p>
-<pre class="r"><code>### bioerosion
-data &lt;- data %&gt;%
-  mutate(bioerosion = case_when(
-    species == &quot;Chlorurus_microrhinos&quot; ~
-      0.000676 * exp(1) ^(0.135 * length) * 7.9 * 2.44 * 650,
-  TRUE ~ 0))
-
-### biomass
-data &lt;- data %&gt;%
-  mutate(biomass = lw_a * length^lw_b)
-
-### biomass production 
-data &lt;- data %&gt;%
-  mutate(t = log(1 - length/linf)/-k) %&gt;%
-  mutate(length2 = linf * (1 - exp(-k*(t + (1/365))))) %&gt;%
-  mutate(biomass2 = lw_a * length2^lw_b) %&gt;%
-  mutate(biomass_prod = biomass2 - biomass) 
-
-### excretion
-data &lt;- data %&gt;%
-  mutate(
-    excretion = N_excretion_intercept + biomass * N_excretion_slope)
-
-### Total function per site
-summary &lt;- group_by(data, site) %&gt;%
-  summarise(N_ex = sum(excretion), 
-            biomass_prod = sum(biomass_prod), 
-            biomass = sum(biomass),
-            bioerosion = sum(bioerosion))</code></pre>
 <p>Make a barplot of each function per site.
 (<strong>TIP</strong> If you use ggplot2, use geom_col() )<br />
 Which site has the highest function?</p>
-<pre class="r"><code>ggplot(summary) +
-  geom_col(aes(x = site, y = N_ex), alpha = 0.9) +
-  scale_fill_fish_d() +
-  theme_bw() +
-  labs(x = &quot;Site&quot;, y = &quot;N excretion (g N/day)&quot;)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
-<pre class="r"><code>ggplot(summary) +
-  geom_col(aes(x = site, y = biomass), alpha = 0.9) +
-  scale_fill_fish_d() +
-  theme_bw() +
-  labs(x = &quot;Site&quot;, y = &quot;Biomass (g)&quot;)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-9-2.png" width="672" /></p>
-<pre class="r"><code>ggplot(summary) +
-  geom_col(aes(x = site, y = biomass_prod), alpha = 0.9) +
-  scale_fill_fish_d() +
-  theme_bw() +
-  labs(x = &quot;Site&quot;, y = &quot;Biomass production (g/day)&quot;)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-9-3.png" width="672" /></p>
-<pre class="r"><code>ggplot(summary) +
-  geom_col(aes(x = site, y = bioerosion), alpha = 0.9) +
-  scale_fill_fish_d() +
-  theme_bw() +
-  labs(x = &quot;Site&quot;, y = &quot;Bioerosion (g CaCO3/day)&quot;)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-9-4.png" width="672" /></p>
 <p><strong>Bonus</strong>: Summarize per site and species and investigate the contribution of each species to each function. Make a barplot colored per species (Tip: use fill for this). Which species contributes the most to each function?</p>
-<pre class="r"><code>summary &lt;- group_by(data, site, species) %&gt;%
-  summarise(N_ex = sum(excretion), 
-            biomass_prod = sum(biomass_prod), 
-            biomass = sum(biomass),
-            bioerosion = sum(bioerosion))</code></pre>
-<pre><code>## `summarise()` regrouping output by &#39;site&#39; (override with `.groups` argument)</code></pre>
-<pre class="r"><code>ggplot(summary) +
-  geom_col(aes(x = site, y = N_ex, fill = species), alpha = 0.9) +
-  scale_fill_fish_d() +
-  theme_bw() +
-  labs(x = &quot;Site&quot;, y = &quot;N excretion (g N/day)&quot;)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
-<pre class="r"><code>ggplot(summary) +
-  geom_col(aes(x = site, y = biomass, fill = species), alpha = 0.9) +
-  scale_fill_fish_d() +
-  theme_bw() +
-  labs(x = &quot;Site&quot;, y = &quot;Biomass (g)&quot;)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-10-2.png" width="672" /></p>
-<pre class="r"><code>ggplot(summary) +
-  geom_col(aes(x = site, y = biomass_prod, fill = species), alpha = 0.9) +
-  scale_fill_fish_d() +
-  theme_bw() +
-  labs(x = &quot;Site&quot;, y = &quot;Biomass production (g/day)&quot;)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-10-3.png" width="672" /></p>
-<pre class="r"><code>ggplot(summary) +
-  geom_col(aes(x = site, y = bioerosion, fill = species), alpha = 0.9) +
-  scale_fill_fish_d() +
-  theme_bw() +
-  labs(x = &quot;Site&quot;, y = &quot;Bioerosion (g CaCO3/day)&quot;)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-10-4.png" width="672" /></p>
 </div>
