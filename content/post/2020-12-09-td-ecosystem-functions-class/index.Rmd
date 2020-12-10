@@ -189,7 +189,7 @@ ggplot(summary) +
 
 
 **Bonus**: Summarize per site and species and investigate the contribution of each species to each function. Make a barplot colored per species (Tip: use fill for this). Which species contributes the most to each function? 
-```{r, message = FALSE, include = FALSE}
+```{r, message = FALSE, include = TRUE}
 summary <- group_by(data, site, species) %>%
   summarise(N_ex = sum(excretion), 
             biomass_prod = sum(biomass_prod), 
