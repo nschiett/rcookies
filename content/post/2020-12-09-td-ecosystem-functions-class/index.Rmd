@@ -160,7 +160,7 @@ summary <- group_by(data, site) %>%
 Make a barplot of each function per site.
 (**TIP** If you use ggplot2, use geom_col() )         
 Which site has the highest function? 
-```{r, include=FALSE}
+```{r, include=TRUE}
 ggplot(summary) +
   geom_col(aes(x = site, y = N_ex), alpha = 0.9) +
   scale_fill_fish_d() +

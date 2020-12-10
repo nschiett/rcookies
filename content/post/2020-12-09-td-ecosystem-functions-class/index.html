@@ -66,16 +66,16 @@ First things first, let’s simulate some data to use. Copy the code block below
 ## 
 ## Parameters:
 ##       Estimate Std. Error t value Pr(&gt;|t|)    
-## linf 21.514059   0.290216  74.131   &lt;2e-16 ***
-## k     0.779824   0.073162  10.659   &lt;2e-16 ***
-## t0    0.009075   0.079532   0.114    0.909    
+## linf 21.556083   0.256996  83.877   &lt;2e-16 ***
+## k     0.890616   0.088749  10.035   &lt;2e-16 ***
+## t0    0.004186   0.067155   0.062     0.95    
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 1.997 on 97 degrees of freedom
+## Residual standard error: 1.88 on 97 degrees of freedom
 ## 
-## Number of iterations to convergence: 4 
-## Achieved convergence tolerance: 5.865e-06</code></pre>
+## Number of iterations to convergence: 5 
+## Achieved convergence tolerance: 3.919e-06</code></pre>
 <p>Now add a column to our dataframe with the predictions and make a figure. (<strong>TIP</strong> If you use ggplot2, use the geom_smooth() option)</p>
 <pre class="r"><code>data &lt;- data %&gt;%
   mutate(l_predict = predict(fit))
@@ -173,5 +173,29 @@ summary &lt;- group_by(data, site) %&gt;%
 <p>Make a barplot of each function per site.
 (<strong>TIP</strong> If you use ggplot2, use geom_col() )<br />
 Which site has the highest function?</p>
+<pre class="r"><code>ggplot(summary) +
+  geom_col(aes(x = site, y = N_ex), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = &quot;Site&quot;, y = &quot;N excretion (g N/day)&quot;)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<pre class="r"><code>ggplot(summary) +
+  geom_col(aes(x = site, y = biomass), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = &quot;Site&quot;, y = &quot;Biomass (g)&quot;)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-9-2.png" width="672" /></p>
+<pre class="r"><code>ggplot(summary) +
+  geom_col(aes(x = site, y = biomass_prod), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = &quot;Site&quot;, y = &quot;Biomass production (g/day)&quot;)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-9-3.png" width="672" /></p>
+<pre class="r"><code>ggplot(summary) +
+  geom_col(aes(x = site, y = bioerosion), alpha = 0.9) +
+  scale_fill_fish_d() +
+  theme_bw() +
+  labs(x = &quot;Site&quot;, y = &quot;Bioerosion (g CaCO3/day)&quot;)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-9-4.png" width="672" /></p>
 <p><strong>Bonus</strong>: Summarize per site and species and investigate the contribution of each species to each function. Make a barplot colored per species (Tip: use fill for this). Which species contributes the most to each function?</p>
 </div>
