@@ -65,17 +65,17 @@ First things first, let’s simulate some data to use. Copy the code block below
 ## Formula: length ~ linf * (1 - exp(-k * (age - t0)))
 ## 
 ## Parameters:
-##      Estimate Std. Error t value Pr(&gt;|t|)    
-## linf  21.3696     0.3232  66.129  &lt; 2e-16 ***
-## k      0.9569     0.1736   5.513 2.92e-07 ***
-## t0     0.2355     0.2383   0.989    0.325    
+##       Estimate Std. Error t value Pr(&gt;|t|)    
+## linf 21.514059   0.290216  74.131   &lt;2e-16 ***
+## k     0.779824   0.073162  10.659   &lt;2e-16 ***
+## t0    0.009075   0.079532   0.114    0.909    
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 2.014 on 97 degrees of freedom
+## Residual standard error: 1.997 on 97 degrees of freedom
 ## 
-## Number of iterations to convergence: 6 
-## Achieved convergence tolerance: 1.148e-06</code></pre>
+## Number of iterations to convergence: 4 
+## Achieved convergence tolerance: 5.865e-06</code></pre>
 <p>Now add a column to our dataframe with the predictions and make a figure. (<strong>TIP</strong> If you use ggplot2, use the geom_smooth() option)</p>
 <pre class="r"><code>data &lt;- data %&gt;%
   mutate(l_predict = predict(fit))
@@ -141,6 +141,35 @@ summary(data)</code></pre>
 <p>We have 10 sites and 5 species.<br />
 Now try and calculate all four functions. For biomass production (g/day), you will need to transform the formula a bit to first calculate the age of each fish. Then you can estimate the length of the fish at age + 1/365 (i.e, how much the fish will grow in one day). Using both the biomass of the lenth and the predicted future length, you can calculate the change in biomass per day.<br />
 Once you calculated the process per individual, you can summarize per site.</p>
+<pre class="r"><code>### bioerosion
+data &lt;- data %&gt;%
+  mutate(bioerosion = case_when(
+    species == &quot;Chlorurus_microrhinos&quot; ~
+      0.000676 * exp(0.135 * as.numeric(length)) * 7.9 * 2.44 * 650,
+  TRUE ~ 0))
+
+### biomass
+data &lt;- data %&gt;%
+  mutate(biomass = lw_a * length^lw_b)
+
+### biomass production 
+data &lt;- data %&gt;%
+  mutate(t = log(1 - length/linf)/-k) %&gt;%
+  mutate(length2 = linf * (1 - exp(-k*(t + (1/365))))) %&gt;%
+  mutate(biomass2 = lw_a * length2^lw_b) %&gt;%
+  mutate(biomass_prod = biomass2 - biomass) 
+
+### excretion
+data &lt;- data %&gt;%
+  mutate(
+    excretion = N_excretion_intercept + biomass * N_excretion_slope)
+
+### Total function per site
+summary &lt;- group_by(data, site) %&gt;%
+  summarise(N_ex = sum(excretion), 
+            biomass_prod = sum(biomass_prod), 
+            biomass = sum(biomass),
+            bioerosion = sum(bioerosion))</code></pre>
 <p>Make a barplot of each function per site.
 (<strong>TIP</strong> If you use ggplot2, use geom_col() )<br />
 Which site has the highest function?</p>

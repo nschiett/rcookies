@@ -125,12 +125,12 @@ summary(data)
 We have 10 sites and 5 species.          
 Now try and calculate all four functions. For biomass production (g/day), you will need to transform the formula a bit to first calculate the age of each fish. Then you can estimate the length of the fish at age + 1/365 (i.e, how much the fish will grow in one day). Using both the biomass of the lenth and the predicted future length, you can calculate the change in biomass per day.         
 Once you calculated the process per individual, you can summarize per site.         
-```{r, message = FALSE, include=FALSE}
+```{r, message = FALSE, include=TRUE}
 ### bioerosion
 data <- data %>%
   mutate(bioerosion = case_when(
     species == "Chlorurus_microrhinos" ~
-      0.000676 * exp(1) ^(0.135 * length) * 7.9 * 2.44 * 650,
+      0.000676 * exp(0.135 * as.numeric(length)) * 7.9 * 2.44 * 650,
   TRUE ~ 0))
 
 ### biomass
@@ -202,7 +202,7 @@ ggplot(summary) +
   theme_bw() +
   labs(x = "Site", y = "N excretion (g N/day)")
 
-ggplot(summary) +
+ggplot(summary) + 
   geom_col(aes(x = site, y = biomass, fill = species), alpha = 0.9) +
   scale_fill_fish_d() +
   theme_bw() +
