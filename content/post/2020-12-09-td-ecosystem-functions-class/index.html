@@ -53,9 +53,39 @@ First things first, let’s simulate some data to use. Copy the code block below
   theme_bw()</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 <p>Go ahead and try to fit the model with the <code>nls()</code> function.<br />
-<strong>TIP</strong>: use <code>start = list(linf = 20, k = 0.5, t0 = 0)</code>.</p>
+<strong>TIP</strong>: use <code>start = list(linf = 20, k = 0.5, t0 = 0)</code>.
+<br>
+<strong>Solution</strong></p>
+<pre class="r"><code>fit &lt;- nls(length ~ linf * (1 - exp(-k*(age - t0))), 
+           data = data, 
+           start = list(linf = 20, k = 0.5, t0 = 0))</code></pre>
 <p>What are the estimated values for k, linf and t0?</p>
+<pre class="r"><code>summary(fit)</code></pre>
+<pre><code>## 
+## Formula: length ~ linf * (1 - exp(-k * (age - t0)))
+## 
+## Parameters:
+##      Estimate Std. Error t value Pr(&gt;|t|)    
+## linf  21.3696     0.3232  66.129  &lt; 2e-16 ***
+## k      0.9569     0.1736   5.513 2.92e-07 ***
+## t0     0.2355     0.2383   0.989    0.325    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 2.014 on 97 degrees of freedom
+## 
+## Number of iterations to convergence: 6 
+## Achieved convergence tolerance: 1.148e-06</code></pre>
 <p>Now add a column to our dataframe with the predictions and make a figure. (<strong>TIP</strong> If you use ggplot2, use the geom_smooth() option)</p>
+<pre class="r"><code>data &lt;- data %&gt;%
+  mutate(l_predict = predict(fit))
+
+ggplot(data) +
+  geom_point(aes(x = age, y = length)) +
+  geom_smooth(aes(x = age, y = l_predict), se = FALSE, color = &quot;red&quot;) +
+  theme_bw() +
+  labs(x = &quot;Age (years)&quot;, y = &quot;Length (cm)&quot;)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 </div>
 <div id="estimating-multiple-functions" class="section level2">
 <h2>Estimating multiple functions</h2>

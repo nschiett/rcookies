@@ -63,21 +63,21 @@ ggplot(data) +
 
 Go ahead and try to fit the model with the `nls()` function.      
 **TIP**: use `start = list(linf = 20, k = 0.5, t0 = 0)`.
-
-
-```{r, include=FALSE}
+<br>
+**Solution**
+```{r, include=TRUE}
 fit <- nls(length ~ linf * (1 - exp(-k*(age - t0))), 
            data = data, 
            start = list(linf = 20, k = 0.5, t0 = 0))
 
 ```
 What are the estimated values for k, linf and t0?
-```{r, include=FALSE}
+```{r, include=TRUE}
 summary(fit)
 ```
 Now add a column to our dataframe with the predictions and make a figure. (**TIP** If you use ggplot2, use the geom_smooth() option)
 
-```{r, message = FALSE, include=FALSE}
+```{r, message = FALSE, include=TRUE}
 data <- data %>%
   mutate(l_predict = predict(fit))
 
