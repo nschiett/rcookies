@@ -112,7 +112,7 @@ CD =  2.44 g/cm3
 **Biomass and biomass production**       
 $$L = Linf (1 – exp(-K (t – t0))$$
 $$Biomass = a * length^b$$
-**N excretion**
+**N excretion**       
 Here we use a simplified method: linear regression with biomass.      
 $$Excretion = intercept + slope * biomass$$      
           
